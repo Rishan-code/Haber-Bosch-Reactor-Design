@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
 from reactor_model import pfr_balances
+from plotting import generate_analytical_plots
 
 def main():
     # Operating Conditions
@@ -45,8 +46,10 @@ def main():
         y0 = [current_X, current_T]
         
         # Solver Setup: Must use Radau for stiff chemical ODEs
+        # 4% inerts (Argon, Methane) in feed, given basic 3:1 stoich.
+        # N2: 24%, H2: 72%, Inerts: 4% -> inerts_ratio = 4.0 / 24.0
         sol = solve_ivp(
-            fun=lambda W, y: pfr_balances(W, y, P0, F_N2_0),
+            fun=lambda W, y: pfr_balances(W, y, P0, F_N2_0, inerts_ratio=4.0/24.0),
             t_span=[W_start, W_end],
             y0=y0,
             method='Radau',
@@ -81,40 +84,10 @@ def main():
     # Convert lists to Numpy arrays
     W_all = np.array(W_all)
     X_all = np.array(X_all)
-    T_all = np.array(T_all)
-    
-    # --- Plot 1: Reactor Profiles ---
-    fig1, ax1 = plt.subplots(figsize=(10, 6))
-    
-    color_x = 'tab:blue'
-    ax1.set_xlabel('Catalyst Weight, W (kg)')
-    ax1.set_ylabel('Conversion (X)', color=color_x)
-    ax1.plot(W_all, X_all, color=color_x, linewidth=2, label='Conversion')
-    ax1.tick_params(axis='y', labelcolor=color_x)
-    
-    ax2 = ax1.twinx()
-    color_t = 'tab:red'
-    ax2.set_ylabel('Temperature (K)', color=color_t)
-    ax2.plot(W_all, T_all, color=color_t, linewidth=2, label='Temperature')
-    ax2.tick_params(axis='y', labelcolor=color_t)
-    
-    plt.title('Multi-Bed PFR Profiles: Conversion and Temperature vs Catalyst Weight')
-    fig1.tight_layout()
-    fig1.savefig('reactor_profiles.png')
-    plt.close(fig1)
-    
-    # --- Plot 2: Sawtooth Trajectory ---
-    fig2, ax3 = plt.subplots(figsize=(8, 6))
-    
-    ax3.plot(T_all, X_all, 'k-', linewidth=2)
-    ax3.set_xlabel('Temperature (K)')
-    ax3.set_ylabel('Conversion (X)')
-    ax3.set_title('Sawtooth Operating Trajectory: Conversion vs. Temperature')
-    ax3.grid(True)
-    
-    fig2.tight_layout()
-    fig2.savefig('sawtooth_trajectory.png')
-    plt.close(fig2)
+    # Generate analytical visuals from our new module
+    print("Generating analysis plots...")
+    generate_analytical_plots(W_all, X_all, T_all, P0, inerts_ratio=4.0/24.0)
+    print("Done! Plots saved safely.")
 
 if __name__ == "__main__":
     main()
